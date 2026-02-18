@@ -503,7 +503,11 @@ adminRouter.post('/send-costum-notification', async (req,res) => {
 
 // Daily Stats
 adminRouter.get('/get-daily-stats', async (req,res) => {
+    const now = new Date()
+    const offset = now.getTimezoneOffset()
+
     let latestDailyRecord = await DayBooking.findOne().sort({existDayDate : -1})
+    const localNowDate = new Date(now.getTime() - (offset * 60 * 1000))
     // Create if there is no day booking
     if(!latestDailyRecord) {
         latestDailyRecord = await new DayBooking({
@@ -594,13 +598,6 @@ adminRouter.get('/get-monthly-stats', async (req,res) => {
     res.json({
         status:true,
         counts
-    })
-})
-
-adminRouter.post('/send-sms', checkingInfos ,async (req,res) => {
-    res.json({
-        status:true,
-        message:"SMS was sent"
     })
 })
 module.exports = adminRouter;

@@ -30,14 +30,14 @@ function getTokenforQue(userBookingID,dayBookingID){
         type:'Queue',
         userBookingID,
         dayBookingID
-    },process.env.JWT_SECRET_QUE,{expiresIn: '1d'})
+    },process.env.JWT_SECRET,{expiresIn: '1d'})
 
     return token
 }
 
 function verificationQueToken(firstToken){
     let response = ""
-    jwt.verify(firstToken,process.env.JWT_SECRET_QUE, (err,decode) => {
+    jwt.verify(firstToken,process.env.JWT_SECRET, (err,decode) => {
         if (err) {
             response = false
         }
@@ -56,14 +56,14 @@ function getTokenforVerifiedUser(userID,serviceID,comingWith){
         userID,
         serviceID,
         comingWith
-    },process.env.JWT_SECRET_VERIFIED_USER)
+    },process.env.JWT_SECRET)
 
     return token
 }
 
 function verificationTokenforVerifiedUser(firstToken){
     let response = ""
-    jwt.verify(firstToken,process.env.JWT_SECRET_VERIFIED_USER, (err,decode) => {
+    jwt.verify(firstToken,process.env.JWT_SECRET, (err,decode) => {
         if (err) {
             response = false
         }

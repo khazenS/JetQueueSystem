@@ -7,25 +7,56 @@ const { User } = require('../../database/schemas/userSchema');
 const { Shop } = require('../../database/schemas/shopSchema');
 const { getTokenforVerifiedUser, verificationTokenforVerifiedUser } = require('../../helpers/jwtProcesses');
 const { v4: uuidv4 } = require('uuid');
-
+const axios = require('axios');
 
 const verifiedRouter = express.Router();
 // Sending SMS for verification
 verifiedRouter.post('/send-sms', checkingInfos, checkBlockedUser, smsReqestLimiter ,async (req,res) => {
-    const phoneNumber = req.body.phoneNumber.replace(/\s+/g, '').trim()
-    const code = generateCode(4)
-    const token = uuidv4();
-    const name = req.body.name
+    let phoneNumber, code, token, name
+    try {
+        phoneNumber = req.body.phoneNumber.replace(/\s+/g, '').trim()
+        code = generateCode(4)
+        token = uuidv4();
+        name = req.body.name
 
 
-    await SMSVerification.create({
-        name: name,
-        phoneNumber: phoneNumber,
-        code: code,
-        token: token
-    })
+        await SMSVerification.create({
+            name: name,
+            phoneNumber: phoneNumber,
+            code: code,
+            token: token
+        })        
+    }catch (error) {
+        return res.json({
+            status: false,
+            message: 'SMS doğrulama kaydı oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.'
+        })
+    }
 
-    console.log(`SMS sent to ${phoneNumber} with code: ${code}`)
+
+    if (process.env.NODE_ENV === 'production') {
+        // We send SMS for code verification in production, but in development, we skip this step to avoid unnecessary SMS costs and just log the code to the console for testing purposes.
+        try {
+            const params = {
+                api_id: process.env.API_ID,
+                api_key: process.env.API_KEY,
+                sender: process.env.SENDER,
+                message_type: "normal",
+                message:`${process.env.SHOP_NAME} kayıt kodu ${code}. Sistemin gelişmesi için sizin geri dönüşleriniz çok önemli.`,
+                phones: [phoneNumber]
+            }
+
+            const smsResponse = await axios.post(process.env.API_URL, params);  
+        }catch (error) {
+            return res.json({
+                status: false,
+                message: error.message || 'SMS gönderilirken bir hata oluştu. Lütfen tekrar deneyin.' 
+            })
+        }
+    } else {
+        console.log(`SMS sent to ${phoneNumber} with code: ${code}`);
+    }
+    
     res.json({
         status:true,
         message:'SMS sent successfully.',

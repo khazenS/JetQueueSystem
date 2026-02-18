@@ -2,6 +2,7 @@ const { RequestLimiterSMS } = require("../database/schemas/smsLimiterSchema")
 const { BlockedUsers } = require("../database/schemas/blockedUsersSchema")
 const axios = require('axios');
 const { SMSVerification } = require("../database/schemas/smsVerification");
+const { logReportWithErrorMessage } = require("../helpers/reportLogger");
 
 
 const smsReqestLimiter = async (req,res,next) => {
@@ -11,7 +12,6 @@ const smsReqestLimiter = async (req,res,next) => {
     const phoneNumber = req.body.phoneNumber.replace(/\s+/g, '').trim();      
     const reCAPTCHAToken = req.body.reCAPTCHAToken
     const name = req.body.name;
-
     // reCAPTCHA verification
     try {
         // Google'a doğrulama isteği
@@ -42,7 +42,7 @@ const smsReqestLimiter = async (req,res,next) => {
             return res.json({ status:false , message: 'Bot davranışı şüphesi, kara listeye alındınız. Dükkan sahibiyle iletişime geçiniz.'});
         }
       } catch (err) {
-        console.error('reCAPTCHA error.', err);
+        logReportWithErrorMessage('reCAPTCHA Verification Error', err.message || 'reCAPTCHA doğrulaması sırasında beklenmedik bir hata oluştu.')
         return res.json({ status:false , message: 'Beklenmedik bir hata oluştu. reCAPTCHA' });
     }
 
@@ -164,51 +164,13 @@ const checkBlockedUser = async (req, res, next) => {
 const verifyLimiter = async (req,res,next) => {
     const token = req.body.token
     const code = req.body.code
-    const reCAPTCHAToken = req.body.reCAPTCHAToken
-
-    if(!reCAPTCHAToken) return res.json({ status : false , message: 'reCAPTCHA token bulunamadı.' }); 
-
+    
     if(!token || !code) {
         return res.json({
             status: false,
             message: "Eksik alanlar. Lütfen yeniden deneyin."
         });
     }
-
-    // reCAPTCHA verification
-    try {
-        // Google'a doğrulama isteği
-        const response = await axios.post(
-          `https://www.google.com/recaptcha/api/siteverify`,
-          null,
-          {
-            params: {
-              secret: process.env.RECAPTCHA_SECRET_KEY,
-              response: reCAPTCHAToken
-            }
-          }
-        );
-    
-        const recaptcha_data = response.data;
-    
-        if (!recaptcha_data.success) {
-          return res.json({ status:false , message: 'Token doğrulaması hatası.' });
-        }
-
-        if (recaptcha_data.score < 0.5 || recaptcha_data.action !== 'send_sms') {
-            await BlockedUsers.create({
-                IP: ip,
-                fp_key: fingerprint,
-                phoneNumber: phoneNumber,
-                reason: 'reCAPTCHA low score or invalid action'
-            })
-            return res.json({ status:false , message: 'Bot davranışı şüphesi, kara listeye alındınız. Dükkan sahibiyle iletişime geçiniz.'});
-        }
-      } catch (err) {
-        console.error('reCAPTCHA error.', err);
-        return res.json({ status:false , message: 'Beklenmedik bir hata oluştu. reCAPTCHA' });
-    }
-
     next()
 }
 

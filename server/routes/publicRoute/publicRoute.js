@@ -10,6 +10,7 @@ const { Admin } = require('../../database/schemas/adminSchema.js');
 const { getIO } = require('../../helpers/socketio.js');
 const webpush = require('web-push');
 const verifiedRouter = require('./verifiedRoute.js');
+const { logReport_TwoData } = require('../../helpers/reportLogger.js');
 const publicRouter = express.Router()
 
 //Learn the shop open or close
@@ -119,6 +120,21 @@ publicRouter.post('/register-user',async (req,res) => {
         })
     }
 
+    // Control if users still exists in que for today
+    for (const userBookingId of lastDayBooking.usersBooking) {
+            const existingBooking = await UserBooking.findOne({ userBookingID: userBookingId });
+            if (existingBooking && existingBooking.userID === updatedUser.userID) {
+                
+                // We log for find the problem.
+                logReport_TwoData('User Already Exists in Que', 'userID', updatedUser.userID, 'userBookingID ', existingBooking.userBookingID)
+
+                // This migth be crash
+                /* return res.json({
+                    status: false,
+                    message: 'Bu kullanıcı zaten bugün için kayıtlıdır.'
+                }); */
+            }
+        }
     //new user booking record
     let newUserBooking = await new UserBooking({
         userID:updatedUser.userID,

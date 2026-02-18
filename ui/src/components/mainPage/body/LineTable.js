@@ -54,7 +54,7 @@ export default function LineTable(){
     if(dailyQue){
     return (
         <div style={{
-          backgroundImage: 'url("jqs_transparent.png")',
+          backgroundImage: `url("${process.env.REACT_APP_TRANSPARENT_LOGO}")`,
           backgroundSize: "contain", 
           backgroundPosition: "center",
           backgroundRepeat:'no-repeat', 

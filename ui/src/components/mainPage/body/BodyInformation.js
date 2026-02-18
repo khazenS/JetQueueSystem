@@ -206,7 +206,7 @@ function BodyInformation(){
         <div>
         <Container sx={{display:"flex",justifyContent:"center",p:2,marginTop:5}}>
             <Typography variant="h4" sx={{fontStyle: 'italic',textShadow: '1px 1px 2px rgba(0,0,0,0.3)'}}>
-                Jet Queue System'e Hoşgeldiniz
+                {process.env.REACT_APP_SHOP_NAME} Hoşgeldiniz
             </Typography>
         </Container>
 

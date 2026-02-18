@@ -4,7 +4,7 @@ const { createAdminDefault, createShopDefault } = require("../helpers/createDefa
 
 const dbConnection = () => {
     mongoose.connect(process.env.DB_URL, {
-        dbName:"yourDatabaseName", // Replace with your actual database name
+        dbName:process.env.DB_NAME, // Replace with your actual database name
     }).then( async () => {
         console.log("Connected to DB successfully")
         await createAdminDefault()
