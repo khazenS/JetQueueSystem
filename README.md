@@ -24,17 +24,10 @@ This app facilitates life of costumers and barber shop owner. Costumers enroll a
 - The setup has 2 side server and client.
   
 ### ⚙️ Server Side Setup
-- You need to type a database name to server/database/dbConnection.js
-- We are going to set .env file.
+- We dive into server folder and copy env file for to enter our information out there.
 ```sh
-DB_URL=yourDatabaseUrl
-PORT=3001
-ENCRYPTION_DECRYPTION_KEY=yourCryptoKey
-JWT_SECRET_QUE=queJWTsecret
-VAPID_PUBLIC_KEY=vapidPublic
-VAPID_PRIVATE_KEY=vapidPrivate
-RECAPTCHA_SECRET_KEY=recaptcha
-JWT_SECRET_VERIFIED_USER=verifiedUserJWTsecret  
+cd server
+cp .env.example
 ```
 Get your DB URL from MongoDB , PORT is 3001 as default , create VAPID keys for web push notification , reCAPTCHA key from Google Cloud.
 After all of that you can determine crypto and jwt keys whatever you want.
@@ -42,11 +35,8 @@ After all of that you can determine crypto and jwt keys whatever you want.
 ### ⚙️ Client Side Setup
 - We are going to set .env file.
 ```sh
-REACT_APP_ENCRYPTION_DECRYPTION_KEY=yourCryptoKey
-REACT_APP_SERVER_URL=http://localhost:3001/api/
-REACT_APP_JWT_SECRET_QUE=queJWTsecret
-REACT_APP_VAPID_PUBLIC=vapidPublic
-REACT_APP_RECAPTCHA_SITE_KEY=recaptcha
+cd ui
+cp .env.example
 ```
 Copy + Paste keys from server/.env except reCAPTCHA site that is another key from Google Cloud.
 
@@ -54,13 +44,11 @@ Copy + Paste keys from server/.env except reCAPTCHA site that is another key fro
 - Client works on 3000 port as a default and server works on 3001.
 - We install our node modules and start for ui.
 ```sh
-cd ui
 npm i 
 npm start
 ```
 - We install our node modules and start for server.
 ```sh
-cd server
 npm i 
 npm run start
 ```
