@@ -38,27 +38,34 @@ function MainPage(){
         }
     },[dailyBookingTotalError,registerTotalError,messageTotalError])
     return (
-        <div>
-        <Container>
+        <Container
+            maxWidth="sm"
+            disableGutters
+            sx={{
+                px: 2.5,
+                pb: 8,
+                minHeight: '100vh',
+                bgcolor: 'background.default',
+            }}
+        >
             {
-                registerReqError === true ? 
+                registerReqError === true ?
                 <div style={{zIndex:'999',position:'fixed',marginTop:5,top:'20px',left:'10px',right:'20px'}}>
-                    <Alert severity="error" variant='filled' sx={{fontWeight:'bold'}}> {registerErrMessage} </Alert>
-                </div> : 
+                    <Alert severity="error" variant='filled' sx={{fontWeight:'bold', borderRadius:3, boxShadow:'0 8px 24px rgba(198,40,40,0.3)'}}> {registerErrMessage} </Alert>
+                </div> :
                 <></>
             }
             {
-                dailyBookingTotalError === true || registerTotalError === true || messageTotalError === true ? 
+                dailyBookingTotalError === true || registerTotalError === true || messageTotalError === true ?
                 <div style={{zIndex:'999',position:'fixed',marginTop:5,top:'20px',left:'10px',right:'20px'}}>
-                    <Alert severity="error" variant='filled' sx={{fontWeight:'bold'}}> Sunucuya çok fazla istek attınız.Lütfen daha sonra tekrar deneyiniz. </Alert>
-                </div> : 
+                    <Alert severity="error" variant='filled' sx={{fontWeight:'bold', borderRadius:3, boxShadow:'0 8px 24px rgba(198,40,40,0.3)'}}> Sunucuya çok fazla istek attınız.Lütfen daha sonra tekrar deneyiniz. </Alert>
+                </div> :
                 <></>
             }
             <Header></Header>
             <BodyInformation></BodyInformation>
             <Body></Body>
         </Container>
-        </div>
 
     )
 }

@@ -1,5 +1,6 @@
-import { Box, Button, Collapse, Container, Grid, IconButton, InputAdornment, TextField, Typography } from "@mui/material";
+import { Box, Button, Collapse, IconButton, InputAdornment, TextField, Typography, useTheme } from "@mui/material";
 import AccountCircle from '@mui/icons-material/AccountCircle';
+import BoltRoundedIcon from '@mui/icons-material/BoltRounded';
 import { useDispatch, useSelector } from "react-redux";
 import { decreaseAmount, increaseAmount, registerFastUser, updateAmount, updateFastName } from "../../redux/features/adminPageSlices/fastOpsSlice";
 import { useEffect, useState } from "react";
@@ -10,24 +11,21 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { decryptData } from "../../helpers/cryptoProcess";
 import { decreaseAmountStats, increaseAmountStats } from "../../redux/features/adminPageSlices/shopStatsSlice";
 
-
-
-
 export default function FastOperations(){
+    const theme = useTheme()
     const dispatch = useDispatch()
     const [nameError,setNameError] = useState(false)
     const [amountError,setAmountError] = useState(false)
-    
+
     const shopStatus = useSelector(state => state.shopStatus.status)
     const fastName = useSelector( state => state.fastOps.fastName)
     const changeAmount = useSelector( state => state.fastOps.changeAmount)
-    
+
     const tokenError = useSelector( state => state.fastOps.expiredError)
     const navigate = useNavigate()
 
     const [openFast,setOpenFast] = useState(false)
     const [openChangeA,setOpenChangeA] = useState(false)
-
 
     // token error exists
     useEffect( () => {
@@ -36,7 +34,7 @@ export default function FastOperations(){
         }
     },[tokenError,navigate])
 
-    // submit handle for fast name 
+    // submit handle for fast name
     const handleFastNameSubmit = () => {
         if(fastName.length > 2 && fastName.length < 15){
             dispatch(registerFastUser(fastName))
@@ -44,14 +42,14 @@ export default function FastOperations(){
                 const decryptedData = decryptData(result.payload.fastUserDatas)
                 dispatch(addNewUser(decryptedData))
             })
-            
+
             setOpenFast(false)
         }else{
             setNameError(true)
         }
     }
 
-    // increace and decrease process handle 
+    // increace and decrease process handle
     const handleIncreaseSubmit = () => {
         if(changeAmount > 0){
             dispatch(increaseAmount(changeAmount))
@@ -78,82 +76,102 @@ export default function FastOperations(){
         }
     }
 
+    if(shopStatus !== true){
+        return null
+    }
+
+    const rowHeaderSx = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        width: '100%',
+        py: 1.5,
+        cursor: 'pointer',
+    }
+
     return (
-        <div>
-            {
-                shopStatus === true ? 
-                <Container sx={{marginTop:5}}>
-                    
-                    <Box sx={{borderBottom:3}}>
-                        <Typography variant="h4" sx={{fontWeight:'bold'}}>Hızlı İşlemler</Typography>
-                    </Box>
-                    <Grid container >
-                        <Grid item xs={10} sx={{display:'flex',alignItems:'center',marginTop:2}}>
-                            <IconButton
-                            onClick={() => {
-                                setOpenFast(!openFast)
-                                dispatch(updateFastName(''))
+        <Box
+            sx={{
+                bgcolor: theme.jqs.surfaceLowest,
+                borderRadius: '16px',
+                boxShadow: theme.jqs.cardShadow,
+                border: `1px solid ${theme.jqs.surfaceVariant}`,
+                p: { xs: 2.5, sm: 3 },
+                animation: 'jqsFadeUp 0.5s ease both',
+            }}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
+                <BoltRoundedIcon sx={{ color: 'primary.main' }} />
+                <Typography variant="h6">Hızlı İşlemler</Typography>
+            </Box>
+
+            {/* Quick add */}
+            <Box sx={{ borderTop: `1px solid ${theme.jqs.surfaceVariant}` }}>
+                <Box
+                    sx={rowHeaderSx}
+                    onClick={() => {
+                        setOpenFast(!openFast)
+                        dispatch(updateFastName(''))
+                        setNameError(false)
+                    }}
+                >
+                    <Typography sx={{ flexGrow: 1, fontWeight: 600 }}>Hızlı ekle</Typography>
+                    <IconButton size="small">
+                        {openFast ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                    </IconButton>
+                </Box>
+
+                <Collapse in={openFast} timeout="auto" unmountOnExit>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, pb: 2, pt: 0.5 }}>
+                        <TextField
+                            onChange={(e) => {
                                 setNameError(false)
-                            }}
-                            >
-                                {openFast ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                            </IconButton>
-
-                            <Typography variant="h6" sx={{opacity:'0.6'}}>
-                                Hızlı ekle
-                            </Typography>
-                        </Grid>
-                    </Grid>
-
-                    <Collapse in={openFast} timeout="auto" unmountOnExit sx={{marginLeft:5}}>
-                            <Box sx={{marginTop:3, display:'flex',alignItems:'center'}} >
-                                <TextField 
-                                onChange={(e) => {
-                                setNameError(false) 
                                 dispatch(updateFastName(e.target.value))
-                                }} 
-                                value={fastName}
-                                helperText= {nameError === true ? '3-15 karakter aralığı isim giriniz.' : ''}
-                                error={nameError} 
-                                size="small" required label="İsim" variant="outlined" 
-                                sx={{width:'65%'}}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start" sx={{color:'black'}}>
-                                            <AccountCircle />
-                                        </InputAdornment>
-                                    ),
-                                }}/>
-                                
-                                <Button
-                                    onClick={() => {handleFastNameSubmit()}} 
-                                    variant="contained" color="primary" 
-                                    sx={{fontWeight: 'bold', width: '35%', marginLeft: 2 }}>
-                                    Sıraya Al
-                                </Button>
-                            </Box>
-                        </Collapse>
+                            }}
+                            value={fastName}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleFastNameSubmit() }}
+                            helperText={nameError === true ? '3-15 karakter aralığı isim giriniz.' : ''}
+                            error={nameError}
+                            size="small" required label="İsim" variant="outlined"
+                            sx={{ flexGrow: 1 }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <AccountCircle sx={{ color: 'text.secondary' }} />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                        <Button
+                            onClick={() => { handleFastNameSubmit() }}
+                            variant="contained" color="primary"
+                            sx={{ fontWeight: 600, whiteSpace: 'nowrap', minWidth: { sm: 140 } }}
+                        >
+                            Sıraya Al
+                        </Button>
+                    </Box>
+                </Collapse>
+            </Box>
 
-                        <Grid container>
-                            <Grid item xs={10} sx={{display:'flex',alignItems:'center',marginTop:2}}>
-                                <IconButton
-                                onClick={() => {
-                                    setOpenChangeA(!openChangeA)
-                                    dispatch(updateAmount(0))
-                                    setAmountError(false)
-                                }}
-                                >
-                                    {openChangeA ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                                </IconButton>
+            {/* Income update */}
+            <Box sx={{ borderTop: `1px solid ${theme.jqs.surfaceVariant}` }}>
+                <Box
+                    sx={rowHeaderSx}
+                    onClick={() => {
+                        setOpenChangeA(!openChangeA)
+                        dispatch(updateAmount(0))
+                        setAmountError(false)
+                    }}
+                >
+                    <Typography sx={{ flexGrow: 1, fontWeight: 600 }}>Gelirde güncelleme yap</Typography>
+                    <IconButton size="small">
+                        {openChangeA ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                    </IconButton>
+                </Box>
 
-                                <Typography variant="h6" sx={{opacity:'0.6'}}>
-                                    Gelirde güncelleme yap
-                                </Typography>
-                            </Grid>
-                        </Grid>
-                        <Collapse in={openChangeA} timeout="auto" unmountOnExit sx={{marginLeft:5}}>
-                            <Box sx={{marginTop:3, display:'flex',alignItems:'center'}}>
-                            <TextField 
+                <Collapse in={openChangeA} timeout="auto" unmountOnExit>
+                    <Box sx={{ display: 'flex', gap: 1, pb: 2, pt: 0.5, alignItems: 'flex-start' }}>
+                        <TextField
                             onChange={(e) => {
                                 setAmountError(false)
                                 dispatch(updateAmount(e.target.value))
@@ -161,25 +179,18 @@ export default function FastOperations(){
                             value={changeAmount}
                             helperText={amountError === true ? 'Lütfen düzgün bir sayı giriniz.' : ''}
                             error={amountError}
-                            size="small" type="number" required label="Lira" sx={{width:'50%'}} variant="outlined" InputProps={{
+                            size="small" type="number" required label="Lira" sx={{ flexGrow: 1 }} variant="outlined"
+                            InputProps={{
                                 startAdornment: (
-                                    <InputAdornment position="start" sx={{color:'black'}}>
-                                        ₺
-                                    </InputAdornment>
+                                    <InputAdornment position="start">₺</InputAdornment>
                                 ),
-                            }}/>
-                            <Button  onClick={() => {handleIncreaseSubmit()}} variant="contained" color="success" sx={{fontWeight: 'bold', fontSize: 12, width: '15%', height: '40px', marginLeft: 2 }}> + </Button>
-                            <Button  onClick={() => {handleDecreaseSubmit()}} variant="contained" color="error" sx={{fontWeight: 'bold', fontSize: 12, width: '15%', height: '40px', marginLeft: 2 }}> - </Button>
-                            </Box>
-                        </Collapse>
-
-
-                </Container> 
-                :
-                <></>  
-            }
-          
-        </div>
-
+                            }}
+                        />
+                        <Button onClick={() => { handleIncreaseSubmit() }} variant="contained" color="success" sx={{ fontWeight: 700, fontSize: '1.1rem', minWidth: 52, px: 0 }}> + </Button>
+                        <Button onClick={() => { handleDecreaseSubmit() }} variant="contained" color="error" sx={{ fontWeight: 700, fontSize: '1.1rem', minWidth: 52, px: 0 }}> − </Button>
+                    </Box>
+                </Collapse>
+            </Box>
+        </Box>
     )
 }

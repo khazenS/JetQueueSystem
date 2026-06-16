@@ -1,4 +1,4 @@
-import { Box, Container, Typography, TextField, Button, Collapse, Grid, IconButton, ButtonGroup,} from "@mui/material";
+import { Box, Typography, TextField, Button, Collapse, Grid, IconButton, ButtonGroup, useTheme } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -8,8 +8,12 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
+import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
 
 export default function ShopSettings(){
+    const theme = useTheme()
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
@@ -57,7 +61,7 @@ export default function ShopSettings(){
         if(showMessage.length < 250){
             dispatch(addMessage(showMessage))
             setShowMessage(false)
-            dispatch(updateShowMessage(''))            
+            dispatch(updateShowMessage(''))
         }else{
             setShowMessageError(true)
         }
@@ -94,13 +98,13 @@ export default function ShopSettings(){
         if(costumShopOpeningState.date === null){
             if(openCostumOpen){
                 let now = new Date()
-                now.setDate(now.getDate() + 1);  
+                now.setDate(now.getDate() + 1);
                 setNowDate(now)
             }else{
                 setHour('10')
                 setMinute('0')
                 setNowDate(null)
-            }   
+            }
         }
 
     },[openCostumOpen])
@@ -113,7 +117,6 @@ export default function ShopSettings(){
 
         setCostumOpen(false)
     }
-
 
     useEffect( () => {
         dispatch(resetOtoDate())
@@ -133,7 +136,7 @@ export default function ShopSettings(){
             setAddService(false)
         }
     }
-     
+
     const resetAddServiceSettings = () => {
         setserviceName('')
         setServiceTime('')
@@ -143,292 +146,321 @@ export default function ShopSettings(){
         setSAmountErr(false)
     }
 
+    // shared styles
+    const rowHeaderSx = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        width: '100%',
+        py: 1.5,
+        cursor: 'pointer',
+    }
 
     return (
-        <Container sx={{marginTop:5}}>
-            <Box sx={{borderBottom:3}}>
-                <Typography variant="h4" sx={{fontWeight:'bold'}}>Dükkan Ayarları</Typography>
+        <Box
+            sx={{
+                bgcolor: theme.jqs.surfaceLowest,
+                borderRadius: '16px',
+                boxShadow: theme.jqs.cardShadow,
+                border: `1px solid ${theme.jqs.surfaceVariant}`,
+                p: { xs: 2.5, sm: 3 },
+                animation: 'jqsFadeUp 0.5s ease both',
+            }}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
+                <SettingsRoundedIcon sx={{ color: 'primary.main' }} />
+                <Typography variant="h6">Dükkan Ayarları</Typography>
             </Box>
 
-            <Box>
-                <Grid container alignItems="center">
-                    <Grid item xs={10} sx={{display:'flex',alignItems:'center',marginTop:2}}>
-                        <IconButton
-                        onClick={() => {
-                            setShowMessage(!openShowMessage)
-                            dispatch(updateShowMessage(''))
-                            setShowMessageError(false)
-                        }}
-                        >
-                            {openShowMessage ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                        </IconButton>
-
-                        <Typography variant="h6" sx={{opacity:'0.6'}}>
+            {/* Announcement */}
+            <Box sx={{ borderTop: `1px solid ${theme.jqs.surfaceVariant}` }}>
+                <Box
+                    sx={rowHeaderSx}
+                    onClick={() => {
+                        setShowMessage(!openShowMessage)
+                        dispatch(updateShowMessage(''))
+                        setShowMessageError(false)
+                    }}
+                >
+                    <Typography sx={{ flexGrow: 1, fontWeight: 600 }}>
                         {shopData.showMessage ? 'Duyuru Kaldır' : 'Duyuru Yayınla'}
-                        </Typography>
-                    </Grid>
-                </Grid>
-                <Collapse in={openShowMessage} timeout="auto" unmountOnExit sx={{marginLeft:5}}>
-                    <Box sx={{ marginTop: '10px'}}>
-                    {
-                        shopData.showMessage ?
-                        <Button onClick={() => deleteMessageSubmit()} variant="contained" color="error" size="small" fullWidth sx={{marginTop:2}}>
-                        Duyuruyu bitir
-                        </Button>
-                        : 
-                        <>
-                            <TextField
-                            onChange={(e) => {
-                            setShowMessageError(false)
-                            dispatch(updateShowMessage(e.target.value))
-                            }}
-                            multiline
-                            rows={4} 
-                            value={showMessage}
-                            helperText= {showMessageError === true ? 'Maksimum 250 karakter girini' : ''}
-                            error={showMessageError} 
-                            size="small" type="number" required label="Duyuru mesajı" variant="outlined" 
-                            fullWidth
-                            />
-                            <Button onClick={() => showMessageSubmit()} variant="contained" color="primary" size="small" fullWidth sx={{marginTop:2}}>
-                                Yayınla
-                            </Button>                        
-                        </>
-
-                    }
+                    </Typography>
+                    <IconButton size="small">
+                        {openShowMessage ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                    </IconButton>
+                </Box>
+                <Collapse in={openShowMessage} timeout="auto" unmountOnExit>
+                    <Box sx={{ pb: 2, pt: 0.5 }}>
+                        {shopData.showMessage ? (
+                            <Button onClick={() => deleteMessageSubmit()} variant="contained" color="error" fullWidth>
+                                Duyuruyu bitir
+                            </Button>
+                        ) : (
+                            <>
+                                <TextField
+                                    onChange={(e) => {
+                                        setShowMessageError(false)
+                                        dispatch(updateShowMessage(e.target.value))
+                                    }}
+                                    multiline
+                                    rows={4}
+                                    value={showMessage}
+                                    helperText={showMessageError === true ? 'Maksimum 250 karakter giriniz' : `${showMessage.length}/250`}
+                                    error={showMessageError}
+                                    size="small" required label="Duyuru mesajı" variant="outlined"
+                                    fullWidth
+                                />
+                                <Button onClick={() => showMessageSubmit()} variant="contained" color="primary" fullWidth sx={{ mt: 1.5 }}>
+                                    Yayınla
+                                </Button>
+                            </>
+                        )}
                     </Box>
                 </Collapse>
             </Box>
-            
 
-            {shopStatus === false ?
-            <>
-                <Box>
-                <Grid container alignItems="center">
-                    <Grid item xs={10} sx={{display:'flex',alignItems:'center',marginTop:2}}>
-                        <IconButton
-                        onClick={() => {
-                            setOpenServices(!openServices)
-                            setAddService(false)
-                            resetAddServiceSettings()
-                        }}
+            {shopStatus === false && (
+                <>
+                    {/* Services */}
+                    <Box sx={{ borderTop: `1px solid ${theme.jqs.surfaceVariant}` }}>
+                        <Box
+                            sx={rowHeaderSx}
+                            onClick={() => {
+                                setOpenServices(!openServices)
+                                setAddService(false)
+                                resetAddServiceSettings()
+                            }}
                         >
-                            {openServices ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                        </IconButton>
-
-                        <Typography variant="h6" sx={{opacity:'0.6'}}>
-                        Hizmet Ekle-Çıkar
-                        </Typography>
-                    </Grid>
-                </Grid>
-                <Collapse in={openServices} timeout="auto" unmountOnExit sx={{marginLeft:5}}>
-                    <Box sx={{ marginTop: '10px'}}>
-
-                    <Button onClick={() => {
-                        setAddService(!openAddService)
-                        resetAddServiceSettings()
-                        }} variant="contained" color={openAddService ? "error" : "success"} fullWidth> 
-                        {openAddService ? <RemoveIcon /> : <AddIcon />}
-                    </Button>
-                
-                    <Collapse in={openAddService} timeout="auto" unmountOnExit>
-                        <Grid container spacing={2} sx={{marginTop:1}}>
-                            <Grid item xs={12} sm={6}>
-                                <TextField 
-                                value={serviceName}
-                                onChange={(e) => {
-                                setserviceName(e.target.value)
-                                setSNameErr(false)
-                                }} 
-                                error={sNameErr}
-                                helperText={sNameErr ? "Lütfen 3-15 karakter aralığında isim giriniz." : "* Ekranda gözükecek bir isim giriniz."}
-                                variant="outlined" 
-                                label="Hizmet İsmi" 
-                                size="small" multiline 
-                                fullWidth/>
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                                <TextField 
-                                value={serviceTime}
-                                onChange={(e) => {
-                                setServiceTime(e.target.value)
-                                setSTimeErr(false)
-                                }}
-                                error={sTimeErr}
-                                helperText={sTimeErr ? "Lütfen geçerli bir sayı giriniz." : "* Dakika cinsinden bir süre giriniz."}
-                                variant="outlined" 
-                                label="Tahmini süre" 
-                                size="small" multiline 
-                                fullWidth/>
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                                <TextField 
-                                value={serviceAmount}
-                                onChange={(e) => {
-                                setServiceAmount(e.target.value)
-                                setSAmountErr(false)
-                                }}
-                                error={sAmountErr}
-                                helperText={ sAmountErr ? "Lütfen geçerli bir sayı giriniz." : "* TL olarak ücret giriniz."}
-                                size="small" multiline variant="outlined"
-                                label="Hizmet ücreti" 
-                                fullWidth/>
-                            </Grid>
-                            <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'center' }}>
-                                <Button 
-                                onClick={submitAddService}
-                                variant="contained" 
-                                color="success" 
-                                startIcon={<AddIcon />} 
-                                sx={{width:'60%'}}>
-                                    Ekle
+                            <Typography sx={{ flexGrow: 1, fontWeight: 600 }}>Hizmet Ekle-Çıkar</Typography>
+                            <IconButton size="small">
+                                {openServices ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                            </IconButton>
+                        </Box>
+                        <Collapse in={openServices} timeout="auto" unmountOnExit>
+                            <Box sx={{ pb: 2, pt: 0.5 }}>
+                                <Button
+                                    onClick={() => {
+                                        setAddService(!openAddService)
+                                        resetAddServiceSettings()
+                                    }}
+                                    variant={openAddService ? "outlined" : "contained"}
+                                    color={openAddService ? "error" : "success"}
+                                    startIcon={openAddService ? <RemoveIcon /> : <AddIcon />}
+                                    fullWidth
+                                    sx={openAddService ? { borderWidth: 1.5, '&:hover': { borderWidth: 1.5 } } : {}}
+                                >
+                                    {openAddService ? 'Vazgeç' : 'Yeni Hizmet'}
                                 </Button>
-                            </Grid>
-                        </Grid>                    
-                    </Collapse>
-                    
-                    {
-                        services && services.length != 0 ?
-                        services.map((service) => (
-                            <Box key={service.serviceID} sx={{boxShadow: '5px 5px 10px rgba(0, 0, 0, 0.5)',display:'flex',justifyContent:'space-between',marginTop:2,borderRadius:3,border:"2px solid blue",alignItems:'center',padding:'1rem'}}>
-                                <Typography sx={{fontWeight:'bold'}}>{service.name}</Typography>
-                                <Typography sx={{fontWeight:'bold'}}>{service.estimatedTime}DK</Typography>
-                                <Typography sx={{fontWeight:'bold'}}>{service.amount}TL</Typography>
-                                <IconButton color="error" size="small" onClick={() => dispatch(deleteService(service.serviceID))}>
-                                    <DeleteIcon />
-                                </IconButton>
+
+                                <Collapse in={openAddService} timeout="auto" unmountOnExit>
+                                    <Box
+                                        sx={{
+                                            mt: 1.5,
+                                            p: 2,
+                                            borderRadius: '12px',
+                                            bgcolor: theme.jqs.surfaceLow,
+                                            border: `1px solid ${theme.jqs.surfaceVariant}`,
+                                        }}
+                                    >
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    value={serviceName}
+                                                    onChange={(e) => {
+                                                        setserviceName(e.target.value)
+                                                        setSNameErr(false)
+                                                    }}
+                                                    error={sNameErr}
+                                                    helperText={sNameErr ? "Lütfen 3-15 karakter aralığında isim giriniz." : "* Ekranda gözükecek bir isim giriniz."}
+                                                    variant="outlined"
+                                                    label="Hizmet İsmi"
+                                                    size="small"
+                                                    fullWidth
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} sm={6}>
+                                                <TextField
+                                                    value={serviceTime}
+                                                    onChange={(e) => {
+                                                        setServiceTime(e.target.value)
+                                                        setSTimeErr(false)
+                                                    }}
+                                                    error={sTimeErr}
+                                                    helperText={sTimeErr ? "Lütfen geçerli bir sayı giriniz." : "* Dakika cinsinden süre."}
+                                                    variant="outlined"
+                                                    label="Tahmini süre"
+                                                    size="small"
+                                                    fullWidth
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} sm={6}>
+                                                <TextField
+                                                    value={serviceAmount}
+                                                    onChange={(e) => {
+                                                        setServiceAmount(e.target.value)
+                                                        setSAmountErr(false)
+                                                    }}
+                                                    error={sAmountErr}
+                                                    helperText={sAmountErr ? "Lütfen geçerli bir sayı giriniz." : "* TL olarak ücret."}
+                                                    size="small" variant="outlined"
+                                                    label="Hizmet ücreti"
+                                                    fullWidth
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
+                                                <Button
+                                                    onClick={submitAddService}
+                                                    variant="contained"
+                                                    color="success"
+                                                    startIcon={<AddIcon />}
+                                                    sx={{ width: { xs: '100%', sm: '60%' } }}
+                                                >
+                                                    Ekle
+                                                </Button>
+                                            </Grid>
+                                        </Grid>
+                                    </Box>
+                                </Collapse>
+
+                                {services && services.length !== 0 ? (
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, mt: 1.5 }}>
+                                        {services.map((service) => (
+                                            <Box
+                                                key={service.serviceID}
+                                                sx={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    gap: 1,
+                                                    p: 1.5,
+                                                    borderRadius: '12px',
+                                                    bgcolor: theme.jqs.surfaceLow,
+                                                    border: `1px solid ${theme.jqs.surfaceVariant}`,
+                                                }}
+                                            >
+                                                <Typography sx={{ fontWeight: 600, flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {service.name}
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, color: 'text.secondary', flexShrink: 0 }}>
+                                                    <AccessTimeRoundedIcon sx={{ fontSize: '0.95rem' }} />
+                                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{service.estimatedTime}dk</Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, color: 'primary.main', flexShrink: 0 }}>
+                                                    <PaymentsRoundedIcon sx={{ fontSize: '0.95rem' }} />
+                                                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{service.amount}₺</Typography>
+                                                </Box>
+                                                <IconButton color="error" size="small" onClick={() => dispatch(deleteService(service.serviceID))} sx={{ flexShrink: 0 }}>
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                ) : null}
                             </Box>
-                        ))
-                        : <></>
-                    }
-                    
-
+                        </Collapse>
                     </Box>
-                </Collapse>
-            </Box>        
 
+                    {/* Custom opening time */}
+                    <Box sx={{ borderTop: `1px solid ${theme.jqs.surfaceVariant}` }}>
+                        <Box sx={rowHeaderSx} onClick={handleCostumShopOpen}>
+                            <Typography sx={{ flexGrow: 1, fontWeight: 600 }}>Dükkan Açılış Saati Ayarla</Typography>
+                            <IconButton size="small">
+                                {openCostumOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                            </IconButton>
+                        </Box>
+                        <Collapse in={openCostumOpen} timeout="auto" unmountOnExit>
+                            <Box sx={{ pb: 2, pt: 0.5 }}>
+                                {costumShopOpeningState.date === null ? (
+                                    <>
+                                        <Box
+                                            sx={{
+                                                p: 1.5,
+                                                borderRadius: '12px',
+                                                bgcolor: theme.jqs.surfaceLow,
+                                                border: `1px solid ${theme.jqs.surfaceVariant}`,
+                                            }}
+                                        >
+                                            İşlem yapılacak tarih
+                                            <Box component="span" sx={{ fontWeight: 700 }}>
+                                                {' '}{nowDate !== null ? nowDate.toLocaleDateString('tr-TR') : ''} , {nowDate !== null ? nowDate.toLocaleDateString('tr-TR', { weekday: 'long' }) : ''}
+                                            </Box>
+                                        </Box>
 
+                                        <ButtonGroup
+                                            sx={{ display: 'flex', justifyContent: 'center', mt: 1.5 }}
+                                            variant="contained"
+                                            aria-label="Basic button group"
+                                        >
+                                            <Button
+                                                onClick={() => { setNowDate(new Date(nowDate.setDate(nowDate.getDate() + 1))); }}
+                                                color="success" size="small" fullWidth sx={{ whiteSpace: 'nowrap' }}
+                                            >
+                                                Gün Arttır
+                                            </Button>
+                                            <Button
+                                                onClick={() => { setNowDate(new Date(nowDate.setDate(nowDate.getDate() - 1))); }}
+                                                color="error" size="small" fullWidth sx={{ whiteSpace: 'nowrap' }}
+                                            >
+                                                Gün Azalt
+                                            </Button>
+                                        </ButtonGroup>
 
-            <Box>
-            <Grid container alignItems="center">
-                <Grid item xs={10} sx={{display:'flex',alignItems:'center',marginTop:2}}>
-                    <IconButton
-                    onClick={handleCostumShopOpen}
-                    >
-                        {openCostumOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                    </IconButton>
+                                        <Box sx={{ mt: 2 }}>
+                                            İşlem yapılacak saat:
+                                            <Box component="span" sx={{ fontWeight: 700 }}> {hour} : {minute < 10 ? '0' + minute : minute}</Box>
+                                        </Box>
 
-                    <Typography variant="h6" sx={{opacity:'0.6'}}>
-                    Dükkan Açılış Saati Ayarla
-                    </Typography>
-                </Grid>
-            </Grid>
-            <Collapse in={openCostumOpen} timeout="auto" unmountOnExit sx={{marginLeft:5}}>
-                {costumShopOpeningState.date === null ?
-                <>
-                <Box sx={{ marginTop: '10px'}}>
-                İşlem yapılacak tarih 
-                <Box component="span" sx={{ fontWeight: 'bold' }}> {nowDate !== null ? nowDate.toLocaleDateString('tr-TR'): <></>} ,  {nowDate !== null ? nowDate.toLocaleDateString('tr-TR', { weekday: 'long' }): <></>}
-                </Box>
-                </Box>                
-                
-                <ButtonGroup 
-                    sx={{ 
-                        display: 'flex', // Flex container olarak ayarla
-                        justifyContent: 'center', // Yatayda ortala
-                        marginTop: 2 // Üstten boşluk
-                    }} 
-                    variant="contained" 
-                    aria-label="Basic button group">
-                    <Button 
-                        onClick={() => {
-                            setNowDate(new Date(nowDate.setDate(nowDate.getDate() + 1)));
-                        }} 
-                        variant="contained" 
-                        color="success" 
-                        size="small" 
-                        fullWidth 
-                        sx={{ 
-                            textAlign: 'center', // Metni ortala
-                            whiteSpace: 'nowrap', // Metnin taşmasını önle
-                        }}>
-                        Gün Arttır
-                    </Button>
-                    <Button 
-                        onClick={() => {
-                            setNowDate(new Date(nowDate.setDate(nowDate.getDate() - 1)));
-                        }} 
-                        variant="contained" 
-                        color="error" 
-                        size="small" 
-                        fullWidth 
-                        sx={{ 
-                            textAlign: 'center', // Metni ortala
-                            whiteSpace: 'nowrap', // Metnin taşmasını önle
-                        }}>
-                        Gün Azalt
-                    </Button>
-                </ButtonGroup>  
+                                        <Grid container spacing={2} justifyContent="center" sx={{ mt: 0.5 }}>
+                                            <Grid item xs={6}>
+                                                <TextField
+                                                    label="Saat" type="number"
+                                                    inputProps={{ max: 24, min: 0 }}
+                                                    value={hour} onChange={handleHourChange}
+                                                    variant="outlined" fullWidth
+                                                />
+                                            </Grid>
+                                            <Grid item xs={6}>
+                                                <TextField
+                                                    label="Dakika" type="number"
+                                                    inputProps={{ max: 59, min: 0 }}
+                                                    value={minute} onChange={handleMinuteChange}
+                                                    variant="outlined" fullWidth
+                                                />
+                                            </Grid>
+                                        </Grid>
 
-                <Box sx={{marginTop:3}}>
-                    İşlem yapılacak saat: 
-                    <Box component="span" sx={{ fontWeight: 'bold' }}> {hour} : {minute < 10 ? '0'+minute : minute}
+                                        <Button onClick={() => { submitCostumShop() }} variant="contained" fullWidth sx={{ mt: 2.5, fontWeight: 700 }}>
+                                            Dükkan açılışını onayla
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Box
+                                            sx={{
+                                                p: 1.5,
+                                                borderRadius: '12px',
+                                                bgcolor: theme.jqs.surfaceLow,
+                                                border: `1px solid ${theme.jqs.surfaceVariant}`,
+                                            }}
+                                        >
+                                            İşlem tarihi <Box component={'span'} sx={{ fontWeight: 700 }}>{costumShopOpeningState.date}</Box>
+                                        </Box>
+                                        <Button
+                                            onClick={() => {
+                                                dispatch(cancelCostumOpen())
+                                                setCostumOpen(!openCostumOpen)
+                                            }}
+                                            variant="contained" fullWidth color="error" sx={{ mt: 1.5 }}
+                                        >
+                                            iptal et
+                                        </Button>
+                                    </>
+                                )}
+                            </Box>
+                        </Collapse>
                     </Box>
-                </Box> 
-
-                <Box sx={{ marginTop: 2 }}>
-                <Grid container spacing={2} justifyContent="center">
-                    {/* Saat Input */}
-                    <Grid item>
-                        <TextField
-                            label="Saat"
-                            type="number"
-                            inputProps={{
-                                max: 24,
-                                min: 0,
-                            }}
-                            value={hour}
-                            onChange={handleHourChange}
-                            variant="outlined"
-                        />
-                    </Grid>
-                
-                    {/* Dakika Input */}
-                    <Grid item>
-                        <TextField
-                            label="Dakika"
-                            type="number"
-                            inputProps={{
-                                max: 59,
-                                min: 0,
-                            }}
-                            value={minute}
-                            onChange={handleMinuteChange}
-                            variant="outlined"
-                        />
-                    </Grid>
-                </Grid>
-                </Box>
-
-                <Button onClick={() => {submitCostumShop()}} variant="contained" fullWidth sx={{marginTop:5,fontWeight:'bold'}}>Dükkan açılışını onayla</Button>
                 </>
-                :
-                <>
-                <Box>İşlem tarihi <Box component={'span'} sx={{fontWeight:'bold'}}>{costumShopOpeningState.date}</Box></Box>
-                <Button onClick={() => {
-                dispatch(cancelCostumOpen())
-                setCostumOpen(!openCostumOpen) }} variant="contained" fullWidth color="error" sx={{marginTop:3}}>iptal et</Button>              
-                </>
-                }
-            </Collapse>
-        </Box>  
-        </>  
-        :
-        <></>
-        }
-
-            
-        </Container>
-        
+            )}
+        </Box>
     )
 }

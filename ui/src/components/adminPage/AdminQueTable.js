@@ -1,25 +1,45 @@
-import { Box, Button, Collapse, Container, Grid, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material"
+import { Box, Button, Chip, Collapse, IconButton, Typography, useTheme } from "@mui/material"
 import React, { useEffect, useState } from "react"
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import LocalPhoneIcon from '@mui/icons-material/LocalPhone';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
+import GroupRoundedIcon from '@mui/icons-material/GroupRounded';
+import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
+import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded';
 import {useDispatch,useSelector} from 'react-redux'
-import { addNewUser, getDailyBookingAdmin, cancelUserFromAdminQue, resetDailyQueue, removeUserFromAdminQue, cutFinished, upMove, downMove, upMoveReq, downMoveReq } from "../../redux/features/adminPageSlices/adminDailyBookingSlice";
-import { changeOrderFeature } from  '../../redux/features/adminPageSlices/shopStatusSlice'
+import { addNewUser, getDailyBookingAdmin, cancelUserFromAdminQue, resetDailyQueue, removeUserFromAdminQue, cutFinished, upMoveReq, downMoveReq } from "../../redux/features/adminPageSlices/adminDailyBookingSlice";
 import { socket } from "../../helpers/socketio";
 import { useNavigate } from "react-router-dom";
 import { newFinishedCut } from "../../redux/features/adminPageSlices/shopStatsSlice";
 import { decryptData } from "../../helpers/cryptoProcess";
 import VerifiedIcon from '@mui/icons-material/Verified';
 
-//Row 
+// Pill used for the service / date row inside an expanded entry
+const infoPillSx = (theme) => ({
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 0.5,
+    py: 0.85,
+    px: 1,
+    borderRadius: '8px',
+    bgcolor: theme.jqs.surfaceLowest,
+    border: `1px solid ${theme.jqs.outlineVariant}`,
+})
+
+//Row
 function Row(props){
-    const { row } = props
-    const { dailyQueue } = props
+    const { row, dailyQueue, index } = props
+    const theme = useTheme()
     const [open,setOpen] = useState(false)
     const dispatch = useDispatch()
+    const isFirst = index === 0
+    const isLast = index === dailyQueue.length - 1
+
     const handleCancel = (userBookingID) => {
         dispatch(removeUserFromAdminQue(userBookingID))
         setOpen(false)
@@ -35,106 +55,171 @@ function Row(props){
     }
 
     const handleUpMove = () => {
-        dispatch(upMoveReq(dailyQueue.indexOf(row)))
+        dispatch(upMoveReq(index))
         setOpen(false)
     }
 
     const handleDownMove = () => {
-        dispatch(downMoveReq(dailyQueue.indexOf(row)))
+        dispatch(downMoveReq(index))
         setOpen(false)
     }
 
     return (
-        <React.Fragment>
-            <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }} key={dailyQueue.indexOf(row)}>
-                <TableCell sx={{padding:0}}>
-                <IconButton sx={{color: 'green'}}
-                    aria-label="expand row"
-                    size="small"
-                    onClick={() => setOpen(!open)}
+        <Box
+            sx={{
+                borderRadius: '12px',
+                border: `1px solid ${isFirst ? theme.palette.primary.main : theme.jqs.surfaceVariant}`,
+                bgcolor: isFirst ? `${theme.jqs.secondaryContainer}22` : theme.jqs.surfaceLow,
+                overflow: 'hidden',
+                transition: 'border-color .2s ease',
+            }}
+        >
+            {/* Main row */}
+            <Box
+                onClick={() => setOpen(!open)}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    p: 1.5,
+                    cursor: 'pointer',
+                    '&:active': { bgcolor: theme.jqs.surfaceContainer },
+                }}
+            >
+                {/* Order badge */}
+                <Box
+                    sx={{
+                        width: 36,
+                        height: 36,
+                        flexShrink: 0,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        bgcolor: isFirst ? theme.palette.primary.main : theme.jqs.surfaceHigh,
+                        color: isFirst ? '#fff' : theme.jqs.onSurfaceVariant,
+                    }}
                 >
-                    {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                </IconButton>
-                </TableCell>
-                <TableCell align='left' component="th" scope="row" sx={{padding:0,fontWeight:'bold'}}>
-                {dailyQueue.indexOf(row) + 1}
-                </TableCell>
-                <TableCell align="center">  
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.25 }}>
-                        {row.name}
+                    {index + 1}
+                </Box>
+
+                {/* Name + phone */}
+                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Typography sx={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {row.name}
+                        </Typography>
                         {row.isVerified && (
-                        <VerifiedIcon 
-                            sx={{ 
-                            fontSize: '1rem',
-                            color: 'primary.main'
-                            }}
-                        />
+                            <VerifiedIcon sx={{ fontSize: '1rem', color: 'primary.main', flexShrink: 0 }} />
+                        )}
+                        {isFirst && (
+                            <Chip label="Sırada" size="small" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, bgcolor: theme.jqs.secondaryContainer, color: theme.jqs.onSecondaryContainer }} />
                         )}
                     </Box>
-                </TableCell>
-                <TableCell align="center" sx={{padding:1}}>{row.phoneNumber}</TableCell>
-                <TableCell align="center" sx={{padding:0}}>{row.comingWith}</TableCell>
-            </TableRow>
+                    {row.phoneNumber !== null && (
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                            {row.phoneNumber}
+                        </Typography>
+                    )}
+                </Box>
 
-            <TableRow>
-                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
-                    <Collapse in={open} timeout="auto" unmountOnExit>
-                        <Grid container spacing={2}>
-                            <Grid item xs={3}>
-                                {
-                                    row.phoneNumber !== null ?
-                                    <a href={`tel:+90${row.phoneNumber}`}>
-                                        <IconButton sx={{margin:1}}  style={{backgroundColor: 'green',color: 'white',borderRadius: '50%',padding: 3}}>
-                                            <LocalPhoneIcon />
-                                        </IconButton>
-                                    </a> :
-                                    <></>
+                {/* Coming with */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, color: 'text.secondary', flexShrink: 0 }}>
+                    <GroupRoundedIcon sx={{ fontSize: '1.05rem' }} />
+                    <Typography sx={{ fontWeight: 600 }}>{row.comingWith}</Typography>
+                </Box>
 
-                                }
-                                
-                            </Grid>
-                            <Grid item xs={2}>
-                                <IconButton onClick={() => {handleCancel(row.userBookingID)}} sx={{margin:1}} style={{backgroundColor: 'red',color: 'white',borderRadius: '50%',padding: 3}}>
-                                    <CloseIcon />
-                                </IconButton>
-                            </Grid>
-                            <Grid item xs={3}>
-                                <IconButton onClick={() => {handleFinishCut(row.userBookingID)}} sx={{margin:1}} style={{backgroundColor: 'blue',color: 'white',borderRadius: '50%',padding: 3}}>
-                                    <ContentCutIcon />
-                                </IconButton>
-                            </Grid>
-                            <Grid item xs={2}>
-                                <IconButton onClick={dailyQueue.indexOf(row) === 0 ? null : handleUpMove} sx={{margin:1}} style={{backgroundColor: 'blue',color: 'white',borderRadius: '50%',padding: 3}}>
-                                    <KeyboardArrowUpIcon />
-                                </IconButton>
-                                
-                                </Grid>
-                                <Grid item xs={2}>
-                                    <IconButton onClick={dailyQueue.indexOf(row) === dailyQueue.length - 1 ? null : handleDownMove} sx={{margin:1}} style={{backgroundColor: 'blue',color: 'white',borderRadius: '50%',padding: 3}}>
-                                        <KeyboardArrowDownIcon />
-                                    </IconButton>
-                                </Grid>
-                            </Grid>
-                            <Grid container spacing={2}>
-                                <Grid item xs={6} sx={{textAlign:'center',opacity:'0.75'}}>
-                                    {row.service.name}
-                                </Grid>
-                                <Grid item xs={6} sx={{textAlign:'center',opacity:'0.75'}}>
-                                    {row.shownDate}
-                                </Grid>
-                            </Grid>
-                    </Collapse>
-                </TableCell>
-            </TableRow>
-        </React.Fragment>
+                <IconButton size="small" sx={{ color: 'primary.main' }}>
+                    {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                </IconButton>
+            </Box>
+
+            {/* Expanded detail */}
+            <Collapse in={open} timeout="auto" unmountOnExit>
+                <Box sx={{ px: 1.5, pb: 1.5 }}>
+                    {/* Service + date — side by side, fill the row */}
+                    <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                        <Box sx={infoPillSx(theme)}>
+                            <ContentCutIcon sx={{ fontSize: '1rem', flexShrink: 0, color: 'text.secondary' }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {row.service.name}
+                            </Typography>
+                        </Box>
+                        <Box sx={infoPillSx(theme)}>
+                            <ScheduleRoundedIcon sx={{ fontSize: '1rem', flexShrink: 0, color: 'text.secondary' }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {row.shownDate}
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    {/* Call (only when phone exists) */}
+                    {row.phoneNumber !== null && (
+                        <Button
+                            component="a"
+                            href={`tel:+90${row.phoneNumber}`}
+                            fullWidth
+                            variant="outlined"
+                            color="success"
+                            startIcon={<LocalPhoneIcon />}
+                            sx={{ mb: 1, borderWidth: 1.5, '&:hover': { borderWidth: 1.5 } }}
+                        >
+                            Ara
+                        </Button>
+                    )}
+
+                    {/* Actions — 2x2 grid */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                        <Button
+                            onClick={() => handleFinishCut(row.userBookingID)}
+                            variant="contained"
+                            color="primary"
+                            startIcon={<ContentCutIcon />}
+                        >
+                            Kesimi Bitir
+                        </Button>
+                        <Button
+                            onClick={() => handleCancel(row.userBookingID)}
+                            variant="outlined"
+                            color="error"
+                            startIcon={<CloseIcon />}
+                            sx={{ borderWidth: 1.5, '&:hover': { borderWidth: 1.5 } }}
+                        >
+                            İptal
+                        </Button>
+                        <Button
+                            onClick={isFirst ? undefined : handleUpMove}
+                            disabled={isFirst}
+                            variant="outlined"
+                            color="info"
+                            startIcon={<KeyboardArrowUpIcon />}
+                            sx={{ borderWidth: 1.5, '&:hover': { borderWidth: 1.5 } }}
+                        >
+                            Yukarı
+                        </Button>
+                        <Button
+                            onClick={isLast ? undefined : handleDownMove}
+                            disabled={isLast}
+                            variant="outlined"
+                            color="info"
+                            startIcon={<KeyboardArrowDownIcon />}
+                            sx={{ borderWidth: 1.5, '&:hover': { borderWidth: 1.5 } }}
+                        >
+                            Aşağı
+                        </Button>
+                    </Box>
+                </Box>
+            </Collapse>
+        </Box>
     )
 }
 export default function AdminQueTable(){
+    const theme = useTheme()
     const dispatch = useDispatch()
     const shopStatus = useSelector( state => state.shopStatus.status)
     const dailyQueue = useSelector( state => state.adminBooking.dailyQueue)
     const cancelTokenError = useSelector( state => state.adminBooking.expiredError)
-    const orderFeature = useSelector(state => state.shopStatus.orderFeature)
 
     const navigate = useNavigate()
 
@@ -151,7 +236,7 @@ export default function AdminQueTable(){
         }else{
             dispatch(resetDailyQueue())
         }
-        
+
     },[dispatch,shopStatus])
 
     // Listen socket for adding new user to que then print it out
@@ -160,7 +245,7 @@ export default function AdminQueTable(){
           const decryptedData = decryptData((cryptedData))
           dispatch(addNewUser(decryptedData))
         })
-    
+
         return () => {
           socket.off('newUser')
         }
@@ -176,73 +261,67 @@ export default function AdminQueTable(){
         }
     },[dispatch])
 
-
-    if(shopStatus === true && dailyQueue !== null){
-        return (
-            <Container sx={{marginTop:1}}>
-                {
-                    dailyQueue.length === 0 ? <Box sx={{borderStyle:'dotted'}}><Typography variant="h4" sx={{fontWeight:'bold',textAlign:'center'}}>Sıra Boş</Typography></Box> : 
-                    <Paper sx={{ width: '100%', overflow: 'hidden',marginTop:1}} elevation={10}>
-                        <TableContainer sx={{maxHeight:350}}>
-                            <Table stickyHeader aria-label="sticky table" sx={{border:1}}>
-                                {// Table head part
-                                }
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell colSpan={12}>
-                                            <Typography sx={{textAlign:'center',fontWeight:'bold'}} variant="h6">Günlük Sıra Listesi</Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell sx={{paddingY:1}} />
-                                        <TableCell align='left' id='line' sx={{padding:0,fontWeight:'bold'}}>
-                                        Sıra
-                                        </TableCell>
-                                        <TableCell align='center' id='name' sx={{fontWeight:'bold',padding:1}}>
-                                        İsim
-                                        </TableCell>
-                                        <TableCell align='center' id='phoneNumber' sx={{fontWeight:'bold',padding:1}}>
-                                        Telefon Numarası
-                                        </TableCell>
-                                        <TableCell align='center' id='comingWith' sx={{padding:0,fontWeight:'bold'}}>
-                                        Kişi Sayısı
-                                        </TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                
-
-                                {// Table body part
-                                }
-                                <TableBody>
-                                    {
-                                        dailyQueue.map( (user) => {
-                                            return (
-                                                <Row key={dailyQueue.indexOf(user)} row={user} dailyQueue={dailyQueue} ></Row>
-                                            )
-                                        })
-                                    }
-                                </TableBody>
-                            </Table>
-                            
-                        </TableContainer>
-                    </Paper>
-
-                }
-
-
-                {
-                    // We can open or close our order specify.
-                    dailyQueue.length !== 0 ? orderFeature === true ?  <Button onClick={() => {dispatch(changeOrderFeature(orderFeature))}}variant="contained" fullWidth color="error" sx={{marginTop:4,marginBottom:4,fontWeight:'bold'}}>Sira almayi kapat</Button> 
-                    : <Button onClick={() => {dispatch(changeOrderFeature(orderFeature))}}variant="contained" fullWidth color="success" sx={{marginTop:4,marginBottom:4,fontWeight:'bold'}}>Sira almayi Ac</Button>
-                    : <></>
-                }
-
-            </Container>
-        )
-    }else{
-        return (
-            <></>
-        )  
+    if(shopStatus !== true || dailyQueue === null){
+        return null
     }
 
+    const totalPeople = dailyQueue.reduce((sum, u) => sum + (Number(u.comingWith) || 0), 0)
+
+    return (
+        <Box
+            sx={{
+                bgcolor: theme.jqs.surfaceLowest,
+                borderRadius: '16px',
+                boxShadow: theme.jqs.cardShadow,
+                border: `1px solid ${theme.jqs.surfaceVariant}`,
+                overflow: 'hidden',
+                animation: 'jqsFadeUp 0.5s ease both',
+            }}
+        >
+            {/* Header */}
+            <Box
+                sx={{
+                    p: 2.5,
+                    borderBottom: `1px solid ${theme.jqs.surfaceVariant}`,
+                    bgcolor: theme.jqs.surfaceLow,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1,
+                }}
+            >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                    <PeopleAltRoundedIcon sx={{ color: 'primary.main' }} />
+                    <Typography variant="h6">Günlük Sıra</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 0.75 }}>
+                    <Chip label={`${dailyQueue.length} kişi`} size="small" sx={{ fontWeight: 600, bgcolor: theme.jqs.surfaceHigh }} />
+                    {totalPeople > dailyQueue.length && (
+                        <Chip label={`${totalPeople} kişi (toplam)`} size="small" sx={{ fontWeight: 600, bgcolor: theme.jqs.secondaryContainer, color: theme.jqs.onSecondaryContainer }} />
+                    )}
+                </Box>
+            </Box>
+
+            {/* Body */}
+            <Box sx={{ p: 2 }}>
+                {dailyQueue.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 5 }}>
+                        <PeopleAltRoundedIcon sx={{ fontSize: '3rem', color: theme.jqs.outlineVariant }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.secondary', mt: 1 }}>
+                            Sıra Boş
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                            Henüz sıraya kimse katılmadı.
+                        </Typography>
+                    </Box>
+                ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, maxHeight: 460, overflowY: 'auto' }}>
+                        {dailyQueue.map((user, index) => (
+                            <Row key={user.userBookingID} row={user} dailyQueue={dailyQueue} index={index} />
+                        ))}
+                    </Box>
+                )}
+            </Box>
+        </Box>
+    )
 }

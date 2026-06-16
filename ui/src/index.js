@@ -4,6 +4,9 @@ import App from './App';
 import { Provider } from 'react-redux'
 import store from "./redux/store.js"
 import { getDailyBookingAdmin } from './redux/features/adminPageSlices/adminDailyBookingSlice.js';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import theme from './theme.js';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 if ("serviceWorker" in navigator) {
@@ -20,7 +23,10 @@ document.addEventListener('visibilitychange', async () => {
 root.render(
   <Provider store={store}>
     <React.StrictMode>
-    <App />
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <App />
+      </ThemeProvider>
     </React.StrictMode>
   </Provider>
 );
