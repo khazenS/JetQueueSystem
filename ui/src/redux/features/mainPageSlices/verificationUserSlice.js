@@ -188,7 +188,12 @@ export const verificationUserSlice = createSlice({
             }else{
                 state.getUserInfo.status = false
                 state.getUserInfo.message = action.payload.message
-                localStorage.removeItem('userToken') // Remove token if user info is not valid
+                // Only clear the stored token when the server says the identity
+                // itself is invalid (bad signature / user no longer verified).
+                // Benign/transient failures must NOT log the user out.
+                if(action.payload.invalidIdentity){
+                    localStorage.removeItem('userToken')
+                }
             }
             state.getUserInfo.isLoading = false
         })
@@ -210,8 +215,8 @@ export const verificationUserSlice = createSlice({
                 state.user.service.serviceID = action.payload.serviceID
                 state.user.service.name = action.payload.serviceName
                 state.user.comingWith = action.payload.comingWith
-                state.user.token = action.payload.token
-                localStorage.setItem('userToken', action.payload.token)
+                // The identity token is no longer rotated on service changes,
+                // so there is nothing to re-store here.
             }else{
                 state.update.status = false
                 state.update.message = action.payload.message

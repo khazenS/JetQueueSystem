@@ -101,46 +101,59 @@ verifiedRouter.post('/verify-sms', verifyLimiter , async (req,res) => {
             phoneNumber: tokenDoc.phoneNumber,
             userType: 'verified'
         });
-    
+
+        const defaultService = await Shop.findOne().then(shop => shop.services[0]); // Get the first service from the shop
+
         if (verifiedUser) {
             if (verifiedUser.name !== tokenDoc.name) verifiedUser.name = tokenDoc.name;
-            await verifiedUser.save();
         }
         else{
             const now = new Date();
             const localDate = new Date(new Date().getTime() - (now.getTimezoneOffset() * 60 * 1000))
-            // If no verified user exists, create a new one
-            verifiedUser = await new User({
+            // If no verified user exists, create a new one with default preferences
+            verifiedUser = new User({
                 name: tokenDoc.name,
                 phoneNumber: tokenDoc.phoneNumber,
                 userType: 'verified',
-                createdAt: localDate
-            }).save();    
+                createdAt: localDate,
+                preferredServiceID: defaultService ? defaultService.serviceID : null,
+                preferredComingWith: 1
+            });
         }
-        let service = await Shop.findOne().then(shop => shop.services[0]); // Get the first service from the shop
-        // Create a token for the verified user
-        const userToken = getTokenforVerifiedUser(verifiedUser.userID,service.serviceID,1); 
-        verifiedUser.token = userToken;
+        // New users need to be saved first so mongoose-sequence assigns userID
+        // before we mint the (userID-based) token.
+        if(!verifiedUser.userID){
+            await verifiedUser.save();
+        }
+        // Reuse the existing token if present so other devices stay valid;
+        // the token is deterministic per userID anyway. Only mint when missing.
+        if(!verifiedUser.token){
+            verifiedUser.token = getTokenforVerifiedUser(verifiedUser.userID);
+        }
         await verifiedUser.save();
         // SMS doğrulama belgesini sil
         await SMSVerification.deleteOne({ token: token });
+
+        // Resolve the user's stored service preference for the response
+        const userService = await Shop.findOne()
+            .then(shop => shop.services.find(s => s.serviceID == verifiedUser.preferredServiceID)) || defaultService;
 
         // Başarılı yanıt gönder
         res.json({
             status: true,
             message: 'SMS dogrulama başarılı.',
             user: {
-                token: userToken,
+                token: verifiedUser.token,
                 name: verifiedUser.name,
                 userID: verifiedUser.userID,
                 phoneNumber: verifiedUser.phoneNumber,
-                service: service ? {
-                    serviceID : service.serviceID,
-                    name: service.name
+                service: userService ? {
+                    serviceID : userService.serviceID,
+                    name: userService.name
                 } : null,
-                comingWith: 1
+                comingWith: verifiedUser.preferredComingWith
             }
-        });        
+        });
         }catch (error) {
         console.error('User creation error:', error);
         res.json({
@@ -160,23 +173,30 @@ verifiedRouter.post('/get-user-info', async (req,res) => {
         })
     }
 
+    // Validate by signature only. Guard before touching userInfo.userID, since
+    // a failed verification returns `false`.
     const userInfo = verificationTokenforVerifiedUser(userToken)
-    const user = await User.findOne({userType : 'verified',userID:userInfo.userID})
-    if(!user || userInfo === false){
+    if(userInfo === false){
         return res.json({
             status:false,
+            invalidIdentity:true,
             message:'Doğrulamanız artık geçersiz. Lütfen tekrar doğrulayın.'
         })
     }
 
-    if(userToken !== user.token){
+    const user = await User.findOne({userType : 'verified',userID:userInfo.userID})
+    if(!user){
         return res.json({
             status:false,
-            message:'Eski token kullanılıyor. Lütfen tekrar doğrulayın.'
+            invalidIdentity:true,
+            message:'Doğrulamanız artık geçersiz. Lütfen tekrar doğrulayın.'
         })
     }
 
-    let service = await Shop.findOne().then(shop => shop.services.find(service => service.serviceID == userInfo.serviceID))
+    // Service/comingWith come from the user's stored preferences, not the token.
+    // Fall back to the shop's default service for users predating these fields.
+    const shop = await Shop.findOne()
+    let service = shop.services.find(service => service.serviceID == user.preferredServiceID) || shop.services[0]
     res.json({
         status:true,
         user:{
@@ -188,21 +208,24 @@ verifiedRouter.post('/get-user-info', async (req,res) => {
                 serviceID: service.serviceID,
                 name:service.name
             } : null,
-            comingWith: userInfo.comingWith
+            comingWith: user.preferredComingWith
         }
     })
-    
-    
-    
+
+
+
 })
 
 
 verifiedRouter.post('/update-verified-user-service', async (req,res) => {
-    let newToken,serviceName
-    const user = await User.findOne({token:req.body.userToken,userType:'verified'})
+    let serviceName
+    // Identify the user by the signature-validated token, not an exact match.
+    const userInfo = verificationTokenforVerifiedUser(req.body.userToken)
+    const user = userInfo === false ? null : await User.findOne({userID:userInfo.userID,userType:'verified'})
     if(!user){
         return res.json({
             status:false,
+            invalidIdentity:true,
             message:'Kullanıcı bulunamadı. Lütfen tekrar doğrulayın.'
         })
     }else{
@@ -217,15 +240,15 @@ verifiedRouter.post('/update-verified-user-service', async (req,res) => {
             })
         }
         serviceName = shop.services.find(service => service.serviceID == newServiceID).name
-        newToken = getTokenforVerifiedUser(user.userID,newServiceID,newComingWith)
-        user.token = newToken
+        // Update stored preferences only; the identity token stays unchanged.
+        user.preferredServiceID = newServiceID
+        user.preferredComingWith = newComingWith
         await user.save()
     }
 
     res.json({
         status:true,
         message:'Servis başarıyla güncellendi.',
-        token:newToken,
         serviceID: req.body.newServiceID,
         comingWith: req.body.newComingWith,
         serviceName: serviceName
@@ -234,16 +257,10 @@ verifiedRouter.post('/update-verified-user-service', async (req,res) => {
 
 // Logout for verified users
 verifiedRouter.post('/logout', async (req,res) => {
-    const verifiedUser = await User.findOne({userType : 'verified',token: req.body.userToken})
-    if(!verifiedUser){
-        return res.json({
-            status:false,
-            message:'Kullanıcı bulunamadı. Lütfen tekrar doğrulayın.'
-        })
-    }
-
-    verifiedUser.token = null
-    await verifiedUser.save()
+    // Identity is now signature-based, so logout is effectively a client-side
+    // clear. We still acknowledge it; we intentionally do NOT null the stored
+    // token, since it is shared/stable across the user's devices and the JWT is
+    // deterministic anyway.
     res.json({
         status:true,
         message:'Çıkış işlemi başarılı.'

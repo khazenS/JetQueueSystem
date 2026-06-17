@@ -34,7 +34,18 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-        
+    // Persisted service preferences for verified users. Kept on the document
+    // (instead of being encoded in the identity token) so the token can stay
+    // stable and changing the service never invalidates it.
+    preferredServiceID : {
+        type: Number,
+        default: null
+    },
+    preferredComingWith : {
+        type: Number,
+        default: 1
+    },
+
 })
 
 // This is for only there will be one user with same phone number and user type

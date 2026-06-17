@@ -50,13 +50,15 @@ function verificationQueToken(firstToken){
 }
 
 // Verified User token processes
-function getTokenforVerifiedUser(userID,serviceID,comingWith){
+// Stable identity token: encodes only the userID (+ type). No expiry and
+// `noTimestamp` so the same user always yields the same string, meaning a
+// re-mint never invalidates a previously issued token. Service preferences are
+// stored on the User document, not in the token.
+function getTokenforVerifiedUser(userID){
     const token = jwt.sign({
         userType:'verified',
-        userID,
-        serviceID,
-        comingWith
-    },process.env.JWT_SECRET)
+        userID
+    },process.env.JWT_SECRET,{noTimestamp: true})
 
     return token
 }

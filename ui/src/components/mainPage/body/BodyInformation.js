@@ -12,7 +12,6 @@ import DoneIcon from '@mui/icons-material/Done';
 import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
 import ContentCutRoundedIcon from '@mui/icons-material/ContentCutRounded';
 import GroupRoundedIcon from '@mui/icons-material/GroupRounded';
-import { jwtDecode } from 'jwt-decode';
 
 function BodyInformation(){
     const theme = useTheme()
@@ -168,24 +167,11 @@ function BodyInformation(){
     }
     return '';
   }
-  // Getting JWT payload
-  const getJWTPayload = () => {
-    if(userToken){
-      try{
-        const decoded = jwtDecode(userToken)
-        return decoded
-      } catch (error) {
-        changeServiceError(true)
-        console.error('Invalid token:', error);
-        return null
-      }
-    }
-    return null
-  }
   // Handle service change
   const handleChangeService = async () => {
-    const decoded = getJWTPayload()
-    if( decoded.serviceID == newService && decoded.comingWith == newComingWith){
+    // Compare against the current preferences in state (sourced from the DB),
+    // not the token — the token no longer encodes service/comingWith.
+    if( userState.service.serviceID == newService && userState.comingWith == newComingWith){
       setSameUpdateInputs(true)
       setChangeService(false)
       return

@@ -86,7 +86,9 @@ publicRouter.post('/register-user',async (req,res) => {
     // Controlling for is user exists
     if(isVerified){
         const userToken = req.body.data.token
-        if(verificationTokenforVerifiedUser(userToken) && user && user.token === userToken){
+        const decoded = verificationTokenforVerifiedUser(userToken)
+        // Validate by signature + matching verified user, not an exact token string.
+        if(decoded && user && user.userType === 'verified' && user.userID === decoded.userID){
             // user exists and verified
             updatedUser = user
         }else{
