@@ -31,6 +31,23 @@ const infoPillSx = (theme) => ({
     border: `1px solid ${theme.jqs.outlineVariant}`,
 })
 
+// Action buttons inside the expanded entry — responsive so labels never clip on small phones
+const actionButtonSx = {
+    minWidth: 0,
+    py: 1,
+    px: { xs: 0.75, sm: 1.5 },
+    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+    whiteSpace: 'nowrap',
+    '& .MuiButton-startIcon': { mr: { xs: 0.5, sm: 0.75 } },
+    '& .MuiButton-startIcon > svg': { fontSize: { xs: '1.1rem', sm: '1.25rem' } },
+}
+
+const outlinedActionButtonSx = {
+    ...actionButtonSx,
+    borderWidth: 1.5,
+    '&:hover': { borderWidth: 1.5 },
+}
+
 //Row
 function Row(props){
     const { row, dailyQueue, index } = props
@@ -80,8 +97,10 @@ function Row(props){
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.5,
-                    p: 1.5,
+                    gap: { xs: 1.5, sm: 1.75 },
+                    px: { xs: 2, sm: 2.25 },
+                    py: { xs: 1.85, sm: 2 },
+                    minHeight: { xs: 74, sm: 78 },
                     cursor: 'pointer',
                     '&:active': { bgcolor: theme.jqs.surfaceContainer },
                 }}
@@ -89,14 +108,16 @@ function Row(props){
                 {/* Order badge */}
                 <Box
                     sx={{
-                        width: 36,
-                        height: 36,
+                        width: { xs: 40, sm: 42 },
+                        height: { xs: 40, sm: 42 },
                         flexShrink: 0,
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontWeight: 700,
+                        fontSize: '1.05rem',
+                        lineHeight: 1,
                         bgcolor: isFirst ? theme.palette.primary.main : theme.jqs.surfaceHigh,
                         color: isFirst ? '#fff' : theme.jqs.onSurfaceVariant,
                     }}
@@ -107,18 +128,18 @@ function Row(props){
                 {/* Name + phone */}
                 <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Typography sx={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '1.02rem', lineHeight: 1.45, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {row.name}
                         </Typography>
                         {row.isVerified && (
                             <VerifiedIcon sx={{ fontSize: '1rem', color: 'primary.main', flexShrink: 0 }} />
                         )}
                         {isFirst && (
-                            <Chip label="Sırada" size="small" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, bgcolor: theme.jqs.secondaryContainer, color: theme.jqs.onSecondaryContainer }} />
+                            <Chip label="Sırada" size="small" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, flexShrink: 0, bgcolor: theme.jqs.secondaryContainer, color: theme.jqs.onSecondaryContainer }} />
                         )}
                     </Box>
                     {row.phoneNumber !== null && (
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {row.phoneNumber}
                         </Typography>
                     )}
@@ -130,7 +151,7 @@ function Row(props){
                     <Typography sx={{ fontWeight: 600 }}>{row.comingWith}</Typography>
                 </Box>
 
-                <IconButton size="small" sx={{ color: 'primary.main' }}>
+                <IconButton size="small" sx={{ color: 'primary.main', flexShrink: 0 }}>
                     {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                 </IconButton>
             </Box>
@@ -176,6 +197,7 @@ function Row(props){
                             variant="contained"
                             color="primary"
                             startIcon={<ContentCutIcon />}
+                            sx={actionButtonSx}
                         >
                             Kesimi Bitir
                         </Button>
@@ -184,7 +206,7 @@ function Row(props){
                             variant="outlined"
                             color="error"
                             startIcon={<CloseIcon />}
-                            sx={{ borderWidth: 1.5, '&:hover': { borderWidth: 1.5 } }}
+                            sx={outlinedActionButtonSx}
                         >
                             İptal
                         </Button>
@@ -194,7 +216,7 @@ function Row(props){
                             variant="outlined"
                             color="info"
                             startIcon={<KeyboardArrowUpIcon />}
-                            sx={{ borderWidth: 1.5, '&:hover': { borderWidth: 1.5 } }}
+                            sx={outlinedActionButtonSx}
                         >
                             Yukarı
                         </Button>
@@ -204,7 +226,7 @@ function Row(props){
                             variant="outlined"
                             color="info"
                             startIcon={<KeyboardArrowDownIcon />}
-                            sx={{ borderWidth: 1.5, '&:hover': { borderWidth: 1.5 } }}
+                            sx={outlinedActionButtonSx}
                         >
                             Aşağı
                         </Button>
@@ -214,12 +236,16 @@ function Row(props){
         </Box>
     )
 }
+// How many entries are shown before the "show more" toggle kicks in
+const INITIAL_VISIBLE = 6
+
 export default function AdminQueTable(){
     const theme = useTheme()
     const dispatch = useDispatch()
     const shopStatus = useSelector( state => state.shopStatus.status)
     const dailyQueue = useSelector( state => state.adminBooking.dailyQueue)
     const cancelTokenError = useSelector( state => state.adminBooking.expiredError)
+    const [showAll, setShowAll] = useState(false)
 
     const navigate = useNavigate()
 
@@ -266,6 +292,9 @@ export default function AdminQueTable(){
     }
 
     const totalPeople = dailyQueue.reduce((sum, u) => sum + (Number(u.comingWith) || 0), 0)
+    const hasOverflow = dailyQueue.length > INITIAL_VISIBLE
+    const visibleQueue = (hasOverflow && !showAll) ? dailyQueue.slice(0, INITIAL_VISIBLE) : dailyQueue
+    const hiddenCount = dailyQueue.length - INITIAL_VISIBLE
 
     return (
         <Box
@@ -315,10 +344,31 @@ export default function AdminQueTable(){
                         </Typography>
                     </Box>
                 ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, maxHeight: 460, overflowY: 'auto' }}>
-                        {dailyQueue.map((user, index) => (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                        {visibleQueue.map((user, index) => (
                             <Row key={user.userBookingID} row={user} dailyQueue={dailyQueue} index={index} />
                         ))}
+
+                        {hasOverflow && (
+                            <Button
+                                onClick={() => setShowAll(!showAll)}
+                                fullWidth
+                                variant="text"
+                                color="primary"
+                                startIcon={showAll ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                                sx={{
+                                    mt: 0.25,
+                                    py: 1.25,
+                                    fontWeight: 600,
+                                    borderRadius: '12px',
+                                    border: `1px dashed ${theme.jqs.outlineVariant}`,
+                                    bgcolor: theme.jqs.surfaceLow,
+                                    '&:hover': { bgcolor: theme.jqs.surfaceContainer },
+                                }}
+                            >
+                                {showAll ? 'Daha az göster' : `Kalan ${hiddenCount} kişiyi göster`}
+                            </Button>
+                        )}
                     </Box>
                 )}
             </Box>

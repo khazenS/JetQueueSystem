@@ -27,8 +27,11 @@ const smsReqestLimiter = async (req,res,next) => {
         );
     
         const recaptcha_data = response.data;
-    
+
         if (!recaptcha_data.success) {
+          // Google neden reddetti? error-codes asıl sebebi söyler
+          // (invalid-input-secret / invalid-input-response / timeout-or-duplicate ...)
+          logReportWithErrorMessage('reCAPTCHA Verification Failed', `error-codes: ${JSON.stringify(recaptcha_data['error-codes'])}, hostname: ${recaptcha_data.hostname}, full: ${JSON.stringify(recaptcha_data)}`)
           return res.json({ status:false , message: 'Token doğrulaması hatası.' });
         }
 

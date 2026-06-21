@@ -8,7 +8,9 @@ const initializeSocket = (server) => {
                 origin: "*",
                 methods: ["GET", "POST"]
             },
-            transports: ["websocket"]
+            // Accept polling as well so clients can fall back when the WebSocket
+            // upgrade is blocked by the reverse proxy.
+            transports: ["websocket", "polling"]
         });        
     }
 };

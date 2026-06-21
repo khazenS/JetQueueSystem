@@ -397,21 +397,59 @@ function InfoBoxes(){
                 </Alert>
             )}
 
-            {/* Announcement (message) — shown right below the primary action */}
+            {/* Announcement (message) — bold, hard-to-miss banner below the CTA */}
             {message && (
                 <Box
                     sx={{
-                        ...cardSx,
+                        position: 'relative',
+                        overflow: 'hidden',
+                        borderRadius: '16px',
                         p: 2.5,
-                        borderLeft: `4px solid ${theme.palette.primary.main}`,
-                        display: 'flex', gap: 1.5,
-                        animation: 'jqsFadeUp 0.5s ease 0.05s both',
+                        color: '#fff',
+                        background: `linear-gradient(135deg, ${theme.jqs.primaryContainer} 0%, ${theme.jqs.primary} 58%, ${theme.jqs.surfaceTint} 100%)`,
+                        border: `1.5px solid ${theme.jqs.secondaryContainer}66`,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1.75,
+                        animation: 'jqsFadeUp 0.5s ease 0.05s both, jqsPulseGlow 2.8s ease-in-out infinite',
                     }}
                 >
-                    <CampaignRoundedIcon sx={{ color: 'primary.main', mt: 0.25 }} />
-                    <Box>
-                        <Typography sx={{ color: 'text.primary', lineHeight: 1.45 }}>{message}</Typography>
-                        <Typography variant="overline" sx={{ color: 'text.secondary', textTransform: 'none' }}>Bugün</Typography>
+                    {/* decorative glow blob (top-right) */}
+                    <Box
+                        sx={{
+                            position: 'absolute', top: -45, right: -35,
+                            width: 150, height: 150, borderRadius: '50%',
+                            bgcolor: `${theme.jqs.secondaryContainer}33`,
+                            filter: 'blur(10px)', pointerEvents: 'none',
+                        }}
+                    />
+
+                    {/* megaphone in a lime circle, gently floating */}
+                    <Box
+                        sx={{
+                            flexShrink: 0,
+                            width: 48, height: 48, borderRadius: '50%',
+                            bgcolor: theme.jqs.secondaryContainer,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.22)',
+                            animation: 'jqsFloat 3.2s ease-in-out infinite',
+                        }}
+                    >
+                        <CampaignRoundedIcon sx={{ color: theme.jqs.onSecondaryContainer, fontSize: '1.65rem' }} />
+                    </Box>
+
+                    <Box sx={{ position: 'relative', minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                            <Typography sx={{ fontWeight: 800, fontSize: '0.72rem', letterSpacing: '0.1em', color: theme.jqs.secondaryContainer }}>
+                                DUYURU
+                            </Typography>
+                            <Box sx={{ px: 0.9, py: '1px', borderRadius: 999, bgcolor: 'rgba(255,255,255,0.18)', fontSize: '0.62rem', fontWeight: 700 }}>
+                                Bugün
+                            </Box>
+                        </Box>
+                        <Typography sx={{ fontWeight: 600, fontSize: '1.05rem', lineHeight: 1.42, color: '#fff' }}>
+                            {message}
+                        </Typography>
                     </Box>
                 </Box>
             )}

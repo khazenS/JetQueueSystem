@@ -10,7 +10,14 @@ const { cryptoMiddleware } = require('./middleware/cryptoMiddleware.js');
 const { initializeSocket } = require('./helpers/socketio.js');
 const webpush = require('web-push');
 // Load environment variables
-dotenv.config();
+const dotenvResult = dotenv.config();
+// NODE_ENV genelde process yöneticisi/hosting tarafından önceden set edilir ve
+// dotenv mevcut bir değişkenin ÜZERİNE YAZMAZ; bu yüzden .env'deki NODE_ENV
+// görmezden gelinir. Diğer host değişkenlerine (PORT vb.) dokunmadan sadece
+// NODE_ENV'i .env'deki değerle zorla.
+if (dotenvResult.parsed && dotenvResult.parsed.NODE_ENV) {
+  process.env.NODE_ENV = dotenvResult.parsed.NODE_ENV;
+}
 // Express app setup
 const app = express();
 

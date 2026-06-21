@@ -7,6 +7,7 @@ const { User } = require('../../database/schemas/userSchema');
 const { Shop } = require('../../database/schemas/shopSchema');
 const { getTokenforVerifiedUser, verificationTokenforVerifiedUser } = require('../../helpers/jwtProcesses');
 const { v4: uuidv4 } = require('uuid');
+const { logReportWithErrorMessage } = require('../../helpers/reportLogger');
 const axios = require('axios');
 
 const verifiedRouter = express.Router();
@@ -33,29 +34,27 @@ verifiedRouter.post('/send-sms', checkingInfos, checkBlockedUser, smsReqestLimit
         })
     }
 
+            // We send SMS for code verification in production, but in development, we skip this step to avoid unnecessary SMS costs and just log the code to the console for testing purposes.
+            try {
+                const params = {
+                    // api_id: process.env.API_ID,
+                    api_key: process.env.API_KEY,
+                    sender: process.env.SENDER,
+                    message_type: "normal",
+                    message:`${process.env.SHOP_NAME} kayıt kodu ${code}. Sistemin gelişmesi için sizin geri dönüşleriniz çok önemli.`,
+                    phones: [phoneNumber]
+                }
 
-    if (process.env.NODE_ENV === 'production') {
-        // We send SMS for code verification in production, but in development, we skip this step to avoid unnecessary SMS costs and just log the code to the console for testing purposes.
-        try {
-            const params = {
-                api_id: process.env.API_ID,
-                api_key: process.env.API_KEY,
-                sender: process.env.SENDER,
-                message_type: "normal",
-                message:`${process.env.SHOP_NAME} kayıt kodu ${code}. Sistemin gelişmesi için sizin geri dönüşleriniz çok önemli.`,
-                phones: [phoneNumber]
+                const smsResponse = await axios.post(process.env.API_URL, params);
+                logReportWithErrorMessage('SEND_SMS_PROVIDER_RESPONSE', `phoneNumber: ${phoneNumber}, status: ${smsResponse.status}, data: ${JSON.stringify(smsResponse.data)}`);
+            }catch (error) {
+                logReportWithErrorMessage('SEND_SMS_PROVIDER_ERROR', `phoneNumber: ${phoneNumber}, message: ${error.message}, status: ${error.response && error.response.status}, data: ${JSON.stringify(error.response && error.response.data)}, API_URL set?: ${!!process.env.API_URL}`);
+                return res.json({
+                    status: false,
+                    message: 'SMS gönderilirken bir hata oluştu. Lütfen tekrar deneyin.'
+                })
             }
 
-            const smsResponse = await axios.post(process.env.API_URL, params);  
-        }catch (error) {
-            return res.json({
-                status: false,
-                message: error.message || 'SMS gönderilirken bir hata oluştu. Lütfen tekrar deneyin.' 
-            })
-        }
-    } else {
-        console.log(`SMS sent to ${phoneNumber} with code: ${code}`);
-    }
     
     res.json({
         status:true,
@@ -125,11 +124,12 @@ verifiedRouter.post('/verify-sms', verifyLimiter , async (req,res) => {
         if(!verifiedUser.userID){
             await verifiedUser.save();
         }
-        // Reuse the existing token if present so other devices stay valid;
-        // the token is deterministic per userID anyway. Only mint when missing.
-        if(!verifiedUser.token){
-            verifiedUser.token = getTokenforVerifiedUser(verifiedUser.userID);
-        }
+        // Always re-mint the identity token on every verification. It is
+        // deterministic (userID + current JWT_SECRET), so under a stable secret
+        // the same string is reproduced and other devices stay valid — but if
+        // JWT_SECRET ever changed, this self-heals by re-issuing a token signed
+        // with the current secret instead of returning a stale, unverifiable one.
+        verifiedUser.token = getTokenforVerifiedUser(verifiedUser.userID);
         await verifiedUser.save();
         // SMS doğrulama belgesini sil
         await SMSVerification.deleteOne({ token: token });

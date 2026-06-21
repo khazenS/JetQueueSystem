@@ -71,9 +71,15 @@ export default function UserRegister() {
   // Load FingerprintJS and get the visitor ID
   useEffect( () => {
     const loadFingerprint = async () => {
-      const fp = await FingerprintJS.load();
-      const result = await fp.get();
-      setFingerprint(result.visitorId);
+      try {
+        const fp = await FingerprintJS.load();
+        const result = await fp.get();
+        setFingerprint(result.visitorId);
+      } catch (error) {
+        // If fingerprinting fails the user can never send an SMS; surface it.
+        console.error('[UserRegister] FingerprintJS yüklenemedi:', error);
+        setfpError(true);
+      }
     };
 
     loadFingerprint();
@@ -188,6 +194,7 @@ export default function UserRegister() {
     try{
       reCAPTCHAToken = await window.grecaptcha.execute(process.env.REACT_APP_RECAPTCHA_SITE_KEY, { action: 'send_sms' });
     }catch(error) {
+      console.error('[UserRegister] reCAPTCHA (send_sms) cannot work:', error, 'siteKey set?', !!process.env.REACT_APP_RECAPTCHA_SITE_KEY, 'grecaptcha?', typeof window.grecaptcha);
       setRpeError(true);
       return;
     }
@@ -212,6 +219,7 @@ export default function UserRegister() {
     try{
       reCAPTCHAToken = await window.grecaptcha.execute(process.env.REACT_APP_RECAPTCHA_SITE_KEY, { action: 'send_sms' });
     }catch(error) {
+      console.error('[UserRegister] reCAPTCHA (verify_sms) can not work:', error, 'siteKey set?', !!process.env.REACT_APP_RECAPTCHA_SITE_KEY, 'grecaptcha?', typeof window.grecaptcha);
       setRpeError(true);
       return;
     }
@@ -283,7 +291,11 @@ export default function UserRegister() {
   const closeModal = () => setOpenRegisterModal(false);
 
   const showAnyError = fpError || rpeError || sendErrorMessage || verifyStatus === false;
-  const errorText = verifyMessage || sendErrorMessage || "Cihaz bilgileri alınamadı. Lütfen izinlerinizi kontrol edin ve sayfayı yenileyin.";
+  const errorText = verifyMessage
+    || sendErrorMessage
+    || (rpeError
+      ? "Güvenlik doğrulaması (reCAPTCHA) yapılamadı. Lütfen sayfayı yenileyip tekrar deneyin."
+      : "Cihaz bilgileri alınamadı. Lütfen izinlerinizi kontrol edin ve sayfayı yenileyin.");
 
   return (
       <Box>
